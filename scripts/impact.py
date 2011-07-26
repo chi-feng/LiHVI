@@ -101,6 +101,8 @@ if __name__ == '__main__':
     elapsed = (time.time() - start) / 60 # seconds -> minutes
     print 'time elapsed: %4.1f minutes' % elapsed
     
+    # increment index
+
     indexf = open('index', 'a')
     indexf.write('%s, %s, %4.1f, "%s"\n' % (indexs, impactvelkms, elapsed, notes))
 
