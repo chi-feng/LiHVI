@@ -26,6 +26,7 @@ float GKConductivity(vector<atom> atoms, vector<atom> t0, int natom) {
 	return J;
 }
 
+
 int main(int argc, char *argv[]) {
 
 	if (argc < 4) {
