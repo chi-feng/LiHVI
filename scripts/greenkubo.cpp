@@ -43,14 +43,14 @@ int main(int argc, char *argv[]) {
 	// max number of characters in a line
 	int maxchar = 512;
 
-	vector<atom> t0_array;
+	vector<atom> t0; // atoms at t = 0
 	int timestep = 0;
 	int natom = 0;
 	string line;
 
 	for (int t = 0; t < timesteps; t++) {
 		
-		vector<atom> atom_array;
+		vector<atom> atoms;
 		
 		// skip 1 line to get to timestep
 		getline(file, line);
@@ -76,19 +76,16 @@ int main(int argc, char *argv[]) {
 			
 			file >> id >> type >> q >> spin >> eradius >> x >> y >> z >> vx >> vy >> vz >> ervel;
 			
-			atom atom_read;
-			atom_read.q = q;
-			atom_read.vx = vx;
-			atom_read.vy = vy;
-			atom_read.vz = vz;
-			atom_array.push_back(atom_read);
+			atom a = {q, vx, vy, vz};
+			atoms.push_back(a);
 			
 			// store t = 0 in t0_array
 			if (timestep == 0) {
-				t0_array = atom_array;
+				t0 = atoms;
 			}
 		}
 
+		// compute J for this timestep
 		float J = GKConductivity(atom_array, t0_array, natom);
 		outfile << timestep << ' ' << J << endl;
 
