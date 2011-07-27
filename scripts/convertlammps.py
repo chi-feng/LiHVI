@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import sys
+import numpy
 
 def convert2xyz(ifname, ofname):
 
