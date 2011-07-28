@@ -1,0 +1,9 @@
+USAGE:
+scripts/impact.py writes input script, data, and shell script in cwd
+run impact.py -h to see help and usage
+
+greenkubo.cpp computes either the VAF or current/charge equivalent 
+tfreq.cpp computes the power spectral density from the VAF
+
+vis.py hooks into VMD-input.py to visualize trajectories
+

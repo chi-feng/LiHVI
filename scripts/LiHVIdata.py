@@ -2,6 +2,7 @@
 
 import argparse
 import random
+import sys
 
 # easier to translate printf from perl to python
 def printf(format, *args): print format % args,
@@ -14,7 +15,7 @@ def appendAtom(atoms, atom):
 
 def writeAtom(ofstream, atom, idx):
     ''' writes an atom to a lammps data file '''
-    out.write('%d %d %f %d %f %s %s %s \n' % 
+    ofstream.write('%d %d %f %d %f %s %s %s \n' % 
         (idx, atom['type'], atom['q'], atom['spin'], atom['eradius'], 
         atom['x'], atom['y'], atom['z'])) 
 
@@ -78,7 +79,7 @@ def write_data(cube_size, slab_size, slab_thickness, separation, filename, seed=
     natom = len(cube['atoms']) + len(slab['atoms'])
 
     # move cube (x,y) to center of slab and create separation in z
-    for i in range(len(cube[0])):
+    for i in range(len(cube['atoms'])):
         cube['atoms'][i]['x'] += slab['bounds']['x'] / 2.0 - cube['bounds']['x'] / 2.0
         cube['atoms'][i]['y'] += slab['bounds']['y'] / 2.0 - cube['bounds']['y'] / 2.0
         cube['atoms'][i]['z'] += slab['bounds']['z'] + separation 
@@ -90,8 +91,8 @@ def write_data(cube_size, slab_size, slab_thickness, separation, filename, seed=
     # find natom in blayer
     zcutoff = slab['atoms'][0]['z']
     blayeridx = 0
-    for atom in slab[0]:
-        if atom[6] <= zcutoff:
+    for atom in slab['atoms']:
+        if atom['z'] <= zcutoff:
             blayeridx += 1
     
     # lithium nucleus and electron mass in amu, respectively
@@ -113,10 +114,10 @@ def write_data(cube_size, slab_size, slab_thickness, separation, filename, seed=
     out.write('Masses\n\n1 %f\n2 %f\n\n' % (masses))
     out.write('Atoms\n\n')
 
-    for i in xrange(len(slab['atoms']))
-        writeAtom(out, slab['atoms'], i+1)
-    for i in xrange(len(cube['atoms']))
-        writeAtom(out, cube['atoms'], i+1+len(slab['atoms']))
+    for i in xrange(len(slab['atoms'])):
+        writeAtom(out, slab['atoms'][i], i+1)
+    for i in xrange(len(cube['atoms'])):
+        writeAtom(out, cube['atoms'][i], i+1+len(slab['atoms']))
     
     out.close()
 
