@@ -47,7 +47,7 @@ print "NVE Heatup for 1000 timesteps"
 print =====================================
 
 reset_timestep 0
-timestep	        0.0001
+timestep	        0.005
 
 velocity            all create 10.0 4928459 rot yes mom yes dist gaussian
 fix 		        0 all temp/rescale/eff 1 10.0 200.0 0.05 1.0 
@@ -72,7 +72,7 @@ print "NVE Impact"
 print =====================================
 
 reset_timestep 0
-timestep	        0.0001
+timestep	        0.005
 fix		            1 all nve/eff
 thermo              200
 group               cube id > ${cubeidx}
@@ -80,8 +80,8 @@ group               blayer id < ${blayeridx}
 velocity            cube set NULL NULL ${impactvel} sum yes units box
 velocity        	blayer   set 0 0 0 sum no units box
 fix             	2 blayer setforce 0.0 0.0 0.0
-dump                1 all custom 250 ${sname}.impact id type q spin eradius x y z vx vy vz ervel
-dump                2 all custom 1000 ${sname}.impact.vmd id type q spin eradius x y z
+dump                1 all custom 10 ${sname}.impact id type q spin eradius x y z vx vy vz ervel
+dump                2 all custom 100 ${sname}.impact.vmd id type q spin eradius x y z
 dump_modify         1 sort 1
 dump_modify         2 sort 1
 run 		        8000000
