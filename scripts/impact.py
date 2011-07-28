@@ -46,7 +46,7 @@ if __name__ == '__main__':
     impactvels = '%0.2d' % impactvelkms
     name = '%s_%s_%s' % (basename, indexs, impactvels)    
     
-    # write data file
+    # write lammps data file
     
     seed = args.seed if args.seed != 0 else None
     indices = LiHVIdata.write_data(args.cube, args.slab, args.thick, args.sep, 'data.%s' % name, seed)
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     blayeridx = indices[1] + 1 # + 1 since we have < blayeridx in input script
     print 'lammps data file written to data.%s' % name
 
-    # write input script from template
+    # write lammps input script from template
     
     template = open('templates/in.Li-HVI', 'r')
     output = open('in.%s' % name, 'w')
@@ -78,31 +78,14 @@ if __name__ == '__main__':
         output.write("nice -10 mpirun -np %d lmp_openmpi -in in.%s\n" % (numprocs, name))
     elif numprocs == 1:
         output.write("nice -10 ./lmp_serial -in in.%s\n" % (name))    
-
     output.close()
+    os.system("chmod +x %s.sh" % name)
+    print 'shell script written to %s.sh' % name
 
-    '''
-    # run lammps using appropriate command
-    
-    if numprocs > 1:
-        os.system("nice -10 mpirun -np %d lmp_openmpi -in in.%s" % (numprocs, name))
-    elif numprocs == 1:
-        os.system("nice -10 ./lmp_serial -in in.%s" % (name))    
-    else:
-        print 'Invalid numprocs (value %d)' % numprocs
-        sys.exit(0)
-    '''
-    '''
-    # convert lammpstrj to xyz viewable in vmd
-    
-    convert2xyz('%s.impact' % name, '%s.xyz' % name)
-    '''
-
-    elapsed = (time.time() - start) / 60 # seconds -> minutes
-    print 'time elapsed: %4.1f minutes' % elapsed
+    elapsed = (time.time() - start)
+    print 'time elapsed: %4.1f seconds' % elapsed
     
     # increment index
-
     indexf = open('index', 'a')
     indexf.write('%s, %s, %4.1f, "%s"\n' % (indexs, impactvelkms, elapsed, notes))
 

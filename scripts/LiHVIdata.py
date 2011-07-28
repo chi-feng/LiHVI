@@ -3,58 +3,65 @@
 import argparse
 import random
 
+# easier to translate printf from perl to python
 def printf(format, *args): print format % args,
 
+def appendAtom(atoms, atom):
+    ''' appends a list [type q spin eradius x y z]
+        to a list of dicionaries '''
+    atoms.append({'type':atom[0], 'q':atom[1], 'spin':atom[2], 'eradius':atom[3], 
+        'x':atom[4], 'y':atom[5], 'z':atom[6]})
+
+def writeAtom(ofstream, atom, idx):
+    ''' writes an atom to a lammps data file '''
+    out.write('%d %d %f %d %f %s %s %s \n' % 
+        (idx, atom['type'], atom['q'], atom['spin'], atom['eradius'], 
+        atom['x'], atom['y'], atom['z'])) 
+
 def LiSolid(nx, ny, nz):
-    '''
-    Generates a lithium solid with FCC nuclear positions 
-    and interstitial electron positions.
-    '''
-    L = 4.419688383648  # eFF optimized (8.32 expt)
-    # This part changes for different lattices
-    xunit = (0, 0.5, 0, 0.5, 0.5, 0, 0, 0.5)
-    yunit = (0, 0.5, 0.5, 0, 0, 0.5, 0, 0.5)
-    zunit = (0, 0, 0.5, 0.5, 0, 0, 0.5, 0.5)
-
-    r_elec = 0.3704240743 # 1s
-    r_elec2 = 1.587531747 # 2s
-
+    ''' Generates a lithium solid with FCC nuclear positions 
+    and interstitial electron positions. Adapted from Li-solid.pl '''
+    # eFF optimized lattice constant (8.32 expt)
+    L = 4.419688383648 
     Lx, Ly, Lz = L, L, L
-
-    xnuc, ynuc, znuc = [], [], []
+    # This part changes for different lattices
+    xunit = (0.0, 0.5, 0.0, 0.5, 0.5, 0.0, 0.0, 0.5)
+    yunit = (0.0, 0.5, 0.5, 0.0, 0.0, 0.5, 0.0, 0.5)
+    zunit = (0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.5, 0.5)
+    r_elec = 0.3704240743 # 1s radius
+    r_elec2 = 1.587531747 # 2s radius
     
+    xnuc, ynuc, znuc = [], [], []
     for z in xrange(nz):
         for y in xrange(ny):
             for x in xrange(nx):
                 for i in xrange(len(xunit)):
                     xnuc.append(x * Lx + xunit[i] * L + 0.2645886245 * L)
                     ynuc.append(y * Ly + yunit[i] * L + 0.2645886245 * L)                    
-                    znuc.append(z * Lz + zunit[i] * L + 0.2645886245 * L)             
-                           
+                    znuc.append(z * Lz + zunit[i] * L + 0.2645886245 * L)  
     numnuc = len(xnuc)
-
-    # length of supercell
+    
+    # bounds of supercell
     xlo, xhi = 0, Lx * nx
     ylo, yhi = 0, Ly * ny
     zlo, zhi = 0, Lz * nz
-
     atoms = [] # [type q spin eradius x y z]
     for i in range(0, numnuc, 8):
         for j in range(4):
             # nuclei
-            atoms.append([1, 3., 0, 0., xnuc[i+j], ynuc[i+j], znuc[i+j]])
+            appendAtom(atoms, [1, 3.,  0,     0., xnuc[i+j], ynuc[i+j], znuc[i+j]])
             # core electrons
-            atoms.append([2, 0., 1, r_elec, xnuc[i+j], ynuc[i+j], znuc[i+j]])
-            atoms.append([2, 0., -1, r_elec, xnuc[i+j], ynuc[i+j], znuc[i+j]])
+            appendAtom(atoms, [2, 0.,  1, r_elec, xnuc[i+j], ynuc[i+j], znuc[i+j]])
+            appendAtom(atoms, [2, 0., -1, r_elec, xnuc[i+j], ynuc[i+j], znuc[i+j]])
         # valence electrons
         spin = 1 if random.random() < 0.5 else -1
-        atoms.append([2, 0.,  spin, r_elec2, xnuc[i+4], ynuc[i+4], znuc[i+4]])
-        atoms.append([2, 0., -spin, r_elec2, xnuc[i+5], ynuc[i+5], znuc[i+5]])
+        appendAtom(atoms, [2, 0.,  spin, r_elec2, xnuc[i+4], ynuc[i+4], znuc[i+4]])
+        appendAtom(atoms, [2, 0., -spin, r_elec2, xnuc[i+5], ynuc[i+5], znuc[i+5]])
         spin = 1 if random.random() < 0.5 else -1
-        atoms.append([2, 0.,  spin, r_elec2, xnuc[i+6], ynuc[i+6], znuc[i+6]])
-        atoms.append([2, 0., -spin, r_elec2, xnuc[i+7], ynuc[i+7], znuc[i+7]])
+        appendAtom(atoms, [2, 0.,  spin, r_elec2, xnuc[i+6], ynuc[i+6], znuc[i+6]])
+        appendAtom(atoms, [2, 0., -spin, r_elec2, xnuc[i+7], ynuc[i+7], znuc[i+7]])
 
-    return atoms, (xlo, xhi), (ylo, yhi), (zlo, zhi)
+    return {'atoms':atoms, 'bounds':{'x':xhi, 'y':yhi, 'z':zhi}}
 
 def write_data(cube_size, slab_size, slab_thickness, separation, filename, seed=None):
     '''
@@ -68,86 +75,55 @@ def write_data(cube_size, slab_size, slab_thickness, separation, filename, seed=
     # generate geometry
     cube = LiSolid(cube_size, cube_size, cube_size)
     slab = LiSolid(slab_size, slab_size, slab_thickness)
-    natom = len(cube[0]) + len(slab[0])
+    natom = len(cube['atoms']) + len(slab['atoms'])
 
-    # xhi - xlo, yhi - ylo
-    cube_dimensions = (cube[1][1] - cube[1][0], cube[2][1] - cube[2][0], cube[3][1] - cube[3][0])
-    slab_dimensions = (slab[1][1] - slab[1][0], slab[2][1] - slab[2][0], slab[3][1] - slab[3][0])
-
-    # move cube (x,y) to center of slab and create separation
-    xshift = slab_dimensions[0] / 2.0 - cube_dimensions[0] / 2.0
-    yshift = slab_dimensions[1] / 2.0 - cube_dimensions[1] / 2.0
-    zshift = slab_dimensions[2] + separation # + cube_dimensions[2] / 2.0
+    # move cube (x,y) to center of slab and create separation in z
     for i in range(len(cube[0])):
-        cube[0][i][4] += xshift
-        cube[0][i][5] += yshift
-        cube[0][i][6] += zshift
+        cube['atoms'][i]['x'] += slab['bounds']['x'] / 2.0 - cube['bounds']['x'] / 2.0
+        cube['atoms'][i]['y'] += slab['bounds']['y'] / 2.0 - cube['bounds']['y'] / 2.0
+        cube['atoms'][i]['z'] += slab['bounds']['z'] + separation 
     
     # sort slab atoms by z values to fix blayer
-    slab[0].sort(lambda a, b : cmp(a[6], b[6]))
+    slab['atoms'].sort(lambda atom1, atom2 : cmp(atom1['z'], atom2['z']))
+    cube['atoms'].sort(lambda atom1, atom2 : cmp(atom1['z'], atom2['z']))
     
     # find natom in blayer
-    zcutoff = slab[0][0][6]
-    blayer = 0
+    zcutoff = slab['atoms'][0]['z']
+    blayeridx = 0
     for atom in slab[0]:
         if atom[6] <= zcutoff:
-            blayer += 1
+            blayeridx += 1
     
     # lithium nucleus and electron mass in amu, respectively
-    masses = (6.941000, 0.000548579867)
+    # masses = (6.941000, 0.000548579867)
+    masses = (6.941000, 1.0)
     # define simulation boundaries
-    xlo, xhi = 0, slab[2][1]
-    ylo, yhi = 0, slab[3][1]
+    xlo, xhi = 0, slab['bounds']['x'] 
+    ylo, yhi = 0, slab['bounds']['y'] 
     zlo, zhi = -100.0, 200.0 # note: z should be shrink-wrapped
     
     out = open('%s' % filename, 'w')
-    xyz = open('%s.cube.xyz' % filename, 'w')
 
-    out.write('Created by AJB + CF\n\n')
+    out.write('Created by LiHVIdata.py\n\n')
     out.write('%d atoms\n' % natom)
     out.write('2 atom types\n\n')
     out.write('%f %f xlo xhi\n' % (xlo, xhi))
     out.write('%f %f ylo yhi\n' % (ylo, yhi))
     out.write('%f %f zlo zhi\n\n' % (zlo, zhi))
-    out.write('Masses\n\n')
-    out.write('1 %f\n2 %f\n\n' % (masses))
+    out.write('Masses\n\n1 %f\n2 %f\n\n' % (masses))
     out.write('Atoms\n\n')
 
-    xyz.write('%d\n' % (len(cube[0]) + len(slab[0])))
-    xyz.write('Li_%d_%d_%d_%d\n' % (cube_size, slab_size, slab_thickness, separation))
+    for i in xrange(len(slab['atoms']))
+        writeAtom(out, slab['atoms'], i+1)
+    for i in xrange(len(cube['atoms']))
+        writeAtom(out, cube['atoms'], i+1+len(slab['atoms']))
     
-
-    idx = 0 
-    for atom in slab[0]:
-        idx += 1
-        out.write('%d %d %f %d %f %s %s %s \n' % 
-            (idx, atom[0], atom[1], atom[2], atom[3], atom[4], atom[5], atom[6]))
-        if atom[0] == 2:
-            name = 'N' if atom[2] == 1 else 'O'
-            xyz.write('%s %f %f %f\n' % (name, atom[4], atom[5], atom[6]))
-        else:
-            xyz.write('%s %f %f %f\n' % ('Li', atom[4], atom[5], atom[6]))
-    for atom in cube[0]:
-        idx += 1
-        out.write('%d %d %f %d %f %s %s %s \n' % 
-            (idx, atom[0], atom[1], atom[2], atom[3], atom[4], atom[5], atom[6]))
-        if atom[0] == 2:
-            name = 'N' if atom[2] == 1 else 'O'
-            xyz.write('%s %f %f %f\n' % (name, atom[4], atom[5], atom[6]))
-        else:
-            xyz.write('%s %f %f %f\n' % ('Li', atom[4], atom[5], atom[6]))
-    
-    xyz.close()
     out.close()
 
     # cubeidx used in lammps input script to set lammps group
-    cubeidx = len(slab[0])
-    # blayeridx used in lammps input script to fix bottom layer
-    # blayeridx = (len(slab[0]) + len(slab[1])) / slab_thickness
-    blayeridx = blayer
-
+    cubeidx = len(slab['atoms'])
+    
     return cubeidx, blayeridx
-
 
 if __name__ == '__main__':
 
