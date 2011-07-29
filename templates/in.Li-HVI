@@ -58,7 +58,7 @@ print =====================================
 print "NVE Equilibrium for 10000 timesteps"
 print =====================================
 unfix		        0
-run		            10000
+run		            1000
 thermo              10
 thermo_style        custom step etotal pe ke press temp
 thermo_modify	    temp effTemp press effPress flush yes	
@@ -80,7 +80,7 @@ group               blayer id < ${blayeridx}
 velocity            cube set NULL NULL ${impactvel} sum yes units box
 velocity        	blayer   set 0 0 0 sum no units box
 fix             	2 blayer setforce 0.0 0.0 0.0
-dump                1 all custom 10 ${sname}.impact id type q spin eradius x y z vx vy vz ervel
+dump                1 all custom 20 ${sname}.impact id type q spin eradius x y z vx vy vz ervel
 dump                2 all custom 100 ${sname}.impact.vmd id type q spin eradius x y z
 dump_modify         1 sort 1
 dump_modify         2 sort 1
