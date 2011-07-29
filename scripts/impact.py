@@ -86,7 +86,7 @@ if __name__ == '__main__':
     print 'time elapsed: %4.1f seconds' % elapsed
     
     # increment index
-    # indexf = open('index', 'a')
-    # indexf.write('%s, %s, %4.1f, "%s"\n' % (indexs, impactvelkms, elapsed, notes))
+    indexf = open('index', 'a')
+    indexf.write('%s, %s, %4.1f, "%s"\n' % (indexs, impactvelkms, elapsed, notes))
 
 
