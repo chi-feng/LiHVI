@@ -13,6 +13,15 @@ struct atom {
 	float vz;
 };
 
+
+void progress(int n, int N) {
+    int inc = N / 100;
+    if (n % inc == 0) {
+        printf("%5d /%5d [%3d%%]\r", n+1, N, 100 * n / N + 1);
+		fflush(stdout);
+    }
+}
+
 float GKConductivity(vector<atom> atoms, vector<atom> t0, int natom) {
 	// $\sum_{i=1}^N\sum_{j=1}^N\langle q_iq_j\vec{v}_i(t)\cdot\vec{v}_j(0)\rangle$
 	float J = 0;
@@ -57,7 +66,8 @@ int main(int argc, char *argv[]) {
 		getline(file, line);
 		getline(file, line);
 		timestep = atoi(line.c_str());
-		printf("Timestep = %d\n", timestep);
+        progress(t,timesteps);
+
 
 		// skip 1 line to get natom
 		getline(file, line);
@@ -77,6 +87,12 @@ int main(int argc, char *argv[]) {
 			
 			file >> id >> type >> q >> spin >> eradius >> x >> y >> z >> vx >> vy >> vz >> ervel;
 			
+			if (type == 1) {
+			   q = 4.80653e-19;
+			} else if (type == 2) {
+		        q = -1.60217e-19;
+	        }
+	        
 			atom a = {q, vx, vy, vz};
 			atoms.push_back(a);
 			
@@ -87,7 +103,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		// compute J for this timestep
-		float J = GKConductivity(atom_array, t0_array, natom);
+		float J = GKConductivity(atoms, t0, natom);
 		outfile << timestep << ' ' << J << endl;
 
 		// get rid of extra newline
