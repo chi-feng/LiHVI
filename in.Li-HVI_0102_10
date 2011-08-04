@@ -1,0 +1,96 @@
+processors          2 2 1
+variable            sname index Li-HVI_0102_10
+variable            impactvel equal -0.100000
+variable            cubeidx equal 25200
+variable            blayeridx equal 1801
+
+log                 ${sname}.log			# 
+
+units               real					# ang, fs, amu
+newton              on						# pairwise newton flag
+boundary            p p s 					# periodic for infinite slab
+dielectric          1.0 					# scale coulombic interactions
+					
+atom_style          electron				# electronic force field atom_style
+											#
+read_data           data.${sname}			#
+											#
+pair_style          eff/cut 22.1 1 1 		# half of periodic boundary, e.g. 10 unit cells
+pair_coeff          * *						#
+											#
+communicate         single vel yes			# 
+											#
+neigh_modify        one 10000 page 100000	# should be able to capture entire slab
+
+compute             peratom all stress/atom
+compute             p all reduce sum c_peratom[1] c_peratom[2] c_peratom[3]
+variable            press equal -(c_p[1]+c_p[2]+c_p[3])/(3*vol)
+
+compute             effTemp all temp/eff
+compute             effPress all pressure effTemp
+
+#compute             energies all pair eff/cut
+#variable            eke equal c_energies[1]
+#variable            epauli equal c_energies[2]
+#variable            ecoul equal c_energies[3]
+#variable            erres equal c_energies[4]
+
+thermo              100
+#thermo_style        custom step etotal pe ke v_eke v_epauli v_ecoul v_erres press v_press temp
+thermo_style        custom step etotal pe ke press temp
+thermo_modify	    temp effTemp press effPress flush yes	
+
+print =====================================
+print "CG Minimization"
+print =====================================
+
+min_style	        cg
+minimize	        0 1.0e-5 100 1000
+
+print =====================================
+print "NVE Heatup for 1000 timesteps"
+print =====================================
+
+reset_timestep 0
+timestep	        0.005
+
+velocity            all create 10.0 4928459 rot yes mom yes dist gaussian
+fix 		        0 all temp/rescale/eff 1 10.0 200.0 0.05 1.0 
+fix		            1 all nve/eff
+run		            1000
+
+print =====================================
+print "NVE Equilibrium for 10000 timesteps"
+print =====================================
+unfix		        0
+run		            1000
+thermo              10
+thermo_style        custom step etotal pe ke press temp
+thermo_modify	    temp effTemp press effPress flush yes	
+dump                1 all custom 100 ${sname}.nve id type q spin eradius x y z vx vy vz ervel
+dump_modify         1 sort 1
+unfix		        1
+undump 1
+
+print =====================================
+print "NVE Impact"
+print =====================================
+
+reset_timestep 0
+timestep	        0.005
+fix		            1 all nve/eff
+thermo              200
+group               cube id > ${cubeidx}
+group               blayer id < ${blayeridx}
+velocity            cube set NULL NULL ${impactvel} sum yes units box
+velocity        	blayer   set 0 0 0 sum no units box
+fix             	2 blayer setforce 0.0 0.0 0.0
+dump                1 all custom 100 ${sname}.impact id type q spin eradius x y z vx vy vz ervel
+dump                2 all custom 200 ${sname}.impact.vmd id type q spin eradius x y z
+dump_modify         1 sort 1
+dump_modify         2 sort 1
+run 		        8000000
+undump              2
+undump              1
+unfix               1
+#unfix               2
